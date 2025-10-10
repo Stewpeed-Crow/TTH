@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Word to Clean HTML Converter</title>
+    <title>Advanced Word to Clean HTML Converter</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/ckeditor.js"></script>
 
     <style>
         body {
             padding-top: 20px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            background-color: #f4f4f4;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
         }
         .header {
             text-align: center;
@@ -23,15 +26,32 @@
         h1 {
             color: #9b4dca;
         }
+        .editor-container {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 10px;
+        }
+        .ck-editor__editable_inline {
+            min-height: 250px; /* Set a minimum height for the visual editor */
+        }
         textarea {
-            min-height: 40vh;
+            min-height: 20vh;
             font-family: monospace;
             font-size: 0.85em;
             background-color: #f7f7f9;
         }
-        #outputHtml {
+        #cleanHtmlOutput {
             background-color: #333;
             color: #aaffaa;
+        }
+        #livePreview {
+            min-height: 40vh;
+            border: 1px dashed #9b4dca;
+            padding: 15px;
+            background-color: white;
+            overflow: auto;
         }
         .column {
             padding: 0 10px;
@@ -47,31 +67,37 @@
 
 <div class="container">
     <div class="header">
-        <h1>Word to Clean HTML Converter</h1>
-        <p>Paste your messy rich text content below to instantly clean out junk tags and styles.</p>
+        <h1>Word to Clean HTML Converter (Advanced)</h1>
+        <p>Paste or type your content below. The cleaned HTML and a live preview will update automatically.</p>
     </div>
 
     <div class="row">
         <div class="column column-50">
-            <h5>1. Paste Messy Content Here</h5>
-            <textarea id="inputHtml" placeholder="Copy text from Word, Google Docs, or an email and paste it here."></textarea>
+            <h5>1. Paste or Edit Content Here</h5>
+            <div id="visualEditor" class="editor-container">
+                <p>Paste your content from Word or Google Docs here. You can also edit it using the toolbar above.</p>
+            </div>
+
+            <h5 style="margin-top: 30px;">2. Clean HTML Code</h5>
+            <textarea id="cleanHtmlOutput" readonly placeholder="The clean, semantic HTML code will appear here."></textarea>
             <div class="button-group">
-                <button onclick="cleanAndDisplay()" class="button button-primary">Clean HTML</button>
+                <button onclick="copyToClipboard('cleanHtmlOutput', this)" class="button button-primary">Copy HTML Code</button>
             </div>
         </div>
 
         <div class="column column-50">
-            <h5>2. Clean HTML Output</h5>
-            <textarea id="outputHtml" readonly placeholder="Your clean HTML will appear here..."></textarea>
-            <div class="button-group">
-                <button onclick="copyToClipboard()" id="copyButton">Copy to Clipboard</button>
+            <h5>3. Live Web Preview</h5>
+            <div id="livePreview" class="editor-container">
+                The converted content will be displayed here as it would appear on a live web page.
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- Core Cleaning Logic ---
+    let editor; // Global variable to hold the CKEditor instance
+
+    // --- Core Cleaning Logic (same as before, but improved) ---
     function cleanHtmlContent(dirtyHtml) {
         if (!dirtyHtml) return '';
 
@@ -85,19 +111,19 @@
             // Remove all MSO-specific attributes and style properties
             .replace(/\s*mso-[^:]+:\s*[^;"]+;?/gi, '')
             .replace(/\s*margin-[^:]+:\s*[^;"]+;?/gi, '')
+            .replace(/\s*line-height:\s*[^;"]+;?/gi, '')
 
             // Remove attributes that are usually junk from rich text
-            .replace(/\s(style|class|id|align|language|on[a-z]+)=("|')[^"']*("|')/gi, '')
+            .replace(/\s(style|class|id|align|language|on[a-z]+)=("|')[^"']*("|')/gi, ' ') // Note the space replacement
             .replace(/<p>\s*(&nbsp;)?\s*<\/p>/gmi, '') // Remove empty paragraphs
             .replace(/<hr\s*[^>]*>/gi, '') // Remove horizontal rules
 
-            // Remove extra line breaks often introduced by Word cleanup
-            .replace(/(\r\n|\n|\r)/gm, "")
+            // Remove extra line breaks often introduced by cleanup
+            .replace(/(\r\n|\n|\r)/gm, " ")
             .trim();
 
         // 2. DOMPurify Sanitize: Use the external library for deep, secure cleaning
-        // DOMPurify removes tags like <script> and strips harmful attributes.
-        // It also cleans out remaining inline styles and generic junk.
+        // This is where most remaining inline styles and generic junk are stripped.
         const cleanOutput = DOMPurify.sanitize(preCleaned, {
             // Keep basic formatting tags
             ALLOWED_TAGS: ['p', 'b', 'i', 'u', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'br'],
@@ -105,14 +131,13 @@
             ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height'] 
         });
 
-        // 3. Final formatting adjustments (optional: unwrap <span> tags)
+        // 3. Final formatting adjustments (Unwrap remaining span tags, clean whitespace)
         let finalOutput = cleanOutput;
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = finalOutput;
 
-        // Iterate and replace remaining span tags with their contents (unwrap them)
-        let spans = tempDiv.querySelectorAll('span');
-        spans.forEach(span => {
+        // Unwrap remaining span tags
+        tempDiv.querySelectorAll('span').forEach(span => {
             while (span.firstChild) {
                 span.parentNode.insertBefore(span.firstChild, span);
             }
@@ -125,32 +150,67 @@
         return finalOutput;
     }
 
-    // --- User Interface Functions ---
+    // --- UI Update & Editor Initialization ---
 
-    function cleanAndDisplay() {
-        const inputArea = document.getElementById('inputHtml');
-        const outputArea = document.getElementById('outputHtml');
+    function updateConverter() {
+        if (!editor) return; // Wait until editor is initialized
+
+        // 1. Get the content (CKEditor provides clean HTML by default, but we clean it further)
+        const dirtyContent = editor.getData();
         
-        // Clean the content
-        const cleaned = cleanHtmlContent(inputArea.value);
+        // 2. Clean the content
+        const cleanedHtml = cleanHtmlContent(dirtyContent);
         
-        // Display the result
-        outputArea.value = cleaned;
+        // 3. Update the Clean HTML Code output box
+        const outputArea = document.getElementById('cleanHtmlOutput');
+        outputArea.value = cleanedHtml;
+
+        // 4. Update the Live Preview panel
+        const previewPanel = document.getElementById('livePreview');
+        previewPanel.innerHTML = cleanedHtml;
     }
 
-    function copyToClipboard() {
-        const outputArea = document.getElementById('outputHtml');
-        const copyButton = document.getElementById('copyButton');
+    // Initialize the Visual Editor
+    ClassicEditor
+        .create( document.querySelector( '#visualEditor' ), {
+            // Optional: Customize the toolbar to keep it minimal and focused on rich text
+            toolbar: {
+                items: [
+                    'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|', 'undo', 'redo'
+                ]
+            }
+        })
+        .then( newEditor => {
+            editor = newEditor;
+            // Set up a listener for changes in the editor
+            editor.model.document.on( 'change:data', () => {
+                // Use a slight delay to avoid over-processing while the user is typing rapidly
+                setTimeout(updateConverter, 200); 
+            });
+            // Initial call to populate outputs
+            updateConverter(); 
+        })
+        .catch( error => {
+            console.error( error );
+            document.getElementById('visualEditor').innerHTML = "Editor failed to load. Please check your internet connection.";
+        });
+
+
+    // --- User Interface Functions ---
+    function copyToClipboard(elementId, buttonElement) {
+        const outputArea = document.getElementById(elementId);
         
         if (outputArea.value) {
             outputArea.select();
             document.execCommand('copy');
             
-            copyButton.textContent = 'Copied!';
-            copyButton.className = 'button'; // Revert primary styling for feedback
+            // Provide visual feedback
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = 'Copied!';
+            buttonElement.className = 'button'; 
             setTimeout(() => {
-                copyButton.textContent = 'Copy to Clipboard';
-                copyButton.className = 'button button-primary'; // Back to original style
+                buttonElement.textContent = originalText;
+                buttonElement.className = 'button button-primary';
             }, 1500);
         }
     }
