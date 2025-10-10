@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Word to Clean HTML Converter</title>
+    <title>Two-Way HTML Converter and Editor</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/ckeditor.js"></script>
 
     <style>
@@ -41,10 +40,13 @@
             font-family: monospace;
             font-size: 0.85em;
             background-color: #f7f7f9;
+            /* Make this textarea writable again */
+            resize: vertical; 
         }
         #cleanHtmlOutput {
             background-color: #333;
             color: #aaffaa;
+            white-space: pre-wrap; /* Improvement for code readability */
         }
         #livePreview {
             min-height: 40vh;
@@ -59,7 +61,15 @@
         .button-group {
             margin-top: 10px;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between; /* Align buttons differently */
+        }
+        .button-secondary {
+            background-color: #9b4dca;
+            border-color: #9b4dca;
+        }
+        .button-secondary:hover {
+            background-color: #7e3aab;
+            border-color: #7e3aab;
         }
     </style>
 </head>
@@ -67,20 +77,22 @@
 
 <div class="container">
     <div class="header">
-        <h1>Word to Clean HTML Converter (Advanced)</h1>
-        <p>Paste or type your content below. The cleaned HTML and a live preview will update automatically.</p>
+        <h1>Two-Way HTML Converter and Editor</h1>
+        <p>Paste rich text for cleaning, or paste HTML code and click 'Load' to edit it visually.</p>
     </div>
 
     <div class="row">
         <div class="column column-50">
-            <h5>1. Paste or Edit Content Here</h5>
+            <h5>1. Visual Editor (Edit Content Here)</h5>
             <div id="visualEditor" class="editor-container">
-                <p>Paste your content from Word or Google Docs here. You can also edit it using the toolbar above.</p>
+                <p>Paste rich text here for cleaning, or click 'Load' below to edit existing code.</p>
             </div>
 
-            <h5 style="margin-top: 30px;">2. Clean HTML Code</h5>
-            <textarea id="cleanHtmlOutput" readonly placeholder="The clean, semantic HTML code will appear here."></textarea>
+            <h5 style="margin-top: 30px;">2. Clean HTML Code (Input/Output)</h5>
+            <textarea id="cleanHtmlOutput" placeholder="Paste your HTML code here, or see the cleaned code here."></textarea>
+            
             <div class="button-group">
+                <button onclick="loadCodeToEditor()" class="button button-secondary">Load Code to Editor</button>
                 <button onclick="copyToClipboard('cleanHtmlOutput', this)" class="button button-primary">Copy HTML Code</button>
             </div>
         </div>
@@ -88,7 +100,7 @@
         <div class="column column-50">
             <h5>3. Live Web Preview</h5>
             <div id="livePreview" class="editor-container">
-                The converted content will be displayed here as it would appear on a live web page.
+                The content will be displayed here.
             </div>
         </div>
     </div>
@@ -97,46 +109,29 @@
 <script>
     let editor; // Global variable to hold the CKEditor instance
 
-    // --- Core Cleaning Logic (same as before, but improved) ---
+    // --- Core Cleaning Logic (same as before) ---
     function cleanHtmlContent(dirtyHtml) {
         if (!dirtyHtml) return '';
-
-        // 1. Initial cleanup: Use Regex to strip common Word-specific junk
         let preCleaned = dirtyHtml
-            // Remove Word XML namespaces and related tags
             .replace(/<o:p>.*?<\/o:p>/gi, '') 
             .replace(/<!\[if gte mso.*?<!\[endif\]>/gs, '') 
-            .replace(/<\/?(span|font|a)[^>]*?class\s*=\s*['"]mso[^'"]+['"][^>]*?>/gsi, '') // Remove MSO classes
-
-            // Remove all MSO-specific attributes and style properties
+            .replace(/<\/?(span|font|a)[^>]*?class\s*=\s*['"]mso[^'"]+['"][^>]*?>/gsi, '') 
             .replace(/\s*mso-[^:]+:\s*[^;"]+;?/gi, '')
             .replace(/\s*margin-[^:]+:\s*[^;"]+;?/gi, '')
             .replace(/\s*line-height:\s*[^;"]+;?/gi, '')
-
-            // Remove attributes that are usually junk from rich text
-            .replace(/\s(style|class|id|align|language|on[a-z]+)=("|')[^"']*("|')/gi, ' ') // Note the space replacement
-            .replace(/<p>\s*(&nbsp;)?\s*<\/p>/gmi, '') // Remove empty paragraphs
-            .replace(/<hr\s*[^>]*>/gi, '') // Remove horizontal rules
-
-            // Remove extra line breaks often introduced by cleanup
+            .replace(/\s(style|class|id|align|language|on[a-z]+)=("|')[^"']*("|')/gi, ' ') 
+            .replace(/<p>\s*(&nbsp;)?\s*<\/p>/gmi, '') 
+            .replace(/<hr\s*[^>]*>/gi, '')
             .replace(/(\r\n|\n|\r)/gm, " ")
             .trim();
 
-        // 2. DOMPurify Sanitize: Use the external library for deep, secure cleaning
-        // This is where most remaining inline styles and generic junk are stripped.
         const cleanOutput = DOMPurify.sanitize(preCleaned, {
-            // Keep basic formatting tags
             ALLOWED_TAGS: ['p', 'b', 'i', 'u', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'br'],
-            // Keep only essential attributes
             ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height'] 
         });
 
-        // 3. Final formatting adjustments (Unwrap remaining span tags, clean whitespace)
-        let finalOutput = cleanOutput;
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = finalOutput;
-
-        // Unwrap remaining span tags
+        tempDiv.innerHTML = cleanOutput;
         tempDiv.querySelectorAll('span').forEach(span => {
             while (span.firstChild) {
                 span.parentNode.insertBefore(span.firstChild, span);
@@ -144,21 +139,33 @@
             span.remove();
         });
 
-        // Clean up any double spaces that resulted from tag removal
-        finalOutput = tempDiv.innerHTML.replace(/\s\s+/g, ' ').trim();
+        return tempDiv.innerHTML.replace(/\s\s+/g, ' ').trim();
+    }
 
-        return finalOutput;
+    // --- NEW: Function to load code from the output box to the editor ---
+    function loadCodeToEditor() {
+        if (!editor) {
+            alert("Editor is not ready yet. Please wait a moment.");
+            return;
+        }
+        const code = document.getElementById('cleanHtmlOutput').value;
+        if (code) {
+            // Set the code into the visual editor
+            editor.setData(code);
+            alert("Code loaded into the Visual Editor. You can now edit it visually.");
+        } else {
+            alert("Please paste the HTML code into the box first.");
+        }
     }
 
     // --- UI Update & Editor Initialization ---
-
     function updateConverter() {
-        if (!editor) return; // Wait until editor is initialized
+        if (!editor) return; 
 
-        // 1. Get the content (CKEditor provides clean HTML by default, but we clean it further)
+        // 1. Get the content from the visual editor
         const dirtyContent = editor.getData();
         
-        // 2. Clean the content
+        // 2. Clean the content (even if it's already clean HTML, we sanitize it again)
         const cleanedHtml = cleanHtmlContent(dirtyContent);
         
         // 3. Update the Clean HTML Code output box
@@ -173,10 +180,9 @@
     // Initialize the Visual Editor
     ClassicEditor
         .create( document.querySelector( '#visualEditor' ), {
-            // Optional: Customize the toolbar to keep it minimal and focused on rich text
             toolbar: {
                 items: [
-                    'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|', 'undo', 'redo'
+                    'heading', '|', 'bold', 'italic', 'underline', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|', 'undo', 'redo'
                 ]
             }
         })
@@ -184,10 +190,8 @@
             editor = newEditor;
             // Set up a listener for changes in the editor
             editor.model.document.on( 'change:data', () => {
-                // Use a slight delay to avoid over-processing while the user is typing rapidly
                 setTimeout(updateConverter, 200); 
             });
-            // Initial call to populate outputs
             updateConverter(); 
         })
         .catch( error => {
@@ -204,7 +208,6 @@
             outputArea.select();
             document.execCommand('copy');
             
-            // Provide visual feedback
             const originalText = buttonElement.textContent;
             buttonElement.textContent = 'Copied!';
             buttonElement.className = 'button'; 
