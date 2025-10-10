@@ -40,7 +40,7 @@
             font-family: monospace;
             font-size: 0.85em;
             background-color: #f7f7f9;
-            /* Make this textarea writable again */
+            /* Now writable for input/output */
             resize: vertical; 
         }
         #cleanHtmlOutput {
@@ -152,6 +152,9 @@
         if (code) {
             // Set the code into the visual editor
             editor.setData(code);
+            // Immediately sync to update the live preview
+            updateConverter();
+            // Provide feedback
             alert("Code loaded into the Visual Editor. You can now edit it visually.");
         } else {
             alert("Please paste the HTML code into the box first.");
