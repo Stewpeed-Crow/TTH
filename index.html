@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Word to Clean HTML Converter</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+    <style>
+        body {
+            padding-top: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #9b4dca;
+        }
+        textarea {
+            min-height: 40vh;
+            font-family: monospace;
+            font-size: 0.85em;
+            background-color: #f7f7f9;
+        }
+        #outputHtml {
+            background-color: #333;
+            color: #aaffaa;
+        }
+        .column {
+            padding: 0 10px;
+        }
+        .button-group {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Word to Clean HTML Converter</h1>
+        <p>Paste your messy rich text content below to instantly clean out junk tags and styles.</p>
+    </div>
+
+    <div class="row">
+        <div class="column column-50">
+            <h5>1. Paste Messy Content Here</h5>
+            <textarea id="inputHtml" placeholder="Copy text from Word, Google Docs, or an email and paste it here."></textarea>
+            <div class="button-group">
+                <button onclick="cleanAndDisplay()" class="button button-primary">Clean HTML</button>
+            </div>
+        </div>
+
+        <div class="column column-50">
+            <h5>2. Clean HTML Output</h5>
+            <textarea id="outputHtml" readonly placeholder="Your clean HTML will appear here..."></textarea>
+            <div class="button-group">
+                <button onclick="copyToClipboard()" id="copyButton">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Core Cleaning Logic ---
+    function cleanHtmlContent(dirtyHtml) {
+        if (!dirtyHtml) return '';
+
+        // 1. Initial cleanup: Use Regex to strip common Word-specific junk
+        let preCleaned = dirtyHtml
+            // Remove Word XML namespaces and related tags
+            .replace(/<o:p>.*?<\/o:p>/gi, '') 
+            .replace(/<!\[if gte mso.*?<!\[endif\]>/gs, '') 
+            .replace(/<\/?(span|font|a)[^>]*?class\s*=\s*['"]mso[^'"]+['"][^>]*?>/gsi, '') // Remove MSO classes
+
+            // Remove all MSO-specific attributes and style properties
+            .replace(/\s*mso-[^:]+:\s*[^;"]+;?/gi, '')
+            .replace(/\s*margin-[^:]+:\s*[^;"]+;?/gi, '')
+
+            // Remove attributes that are usually junk from rich text
+            .replace(/\s(style|class|id|align|language|on[a-z]+)=("|')[^"']*("|')/gi, '')
+            .replace(/<p>\s*(&nbsp;)?\s*<\/p>/gmi, '') // Remove empty paragraphs
+            .replace(/<hr\s*[^>]*>/gi, '') // Remove horizontal rules
+
+            // Remove extra line breaks often introduced by Word cleanup
+            .replace(/(\r\n|\n|\r)/gm, "")
+            .trim();
+
+        // 2. DOMPurify Sanitize: Use the external library for deep, secure cleaning
+        // DOMPurify removes tags like <script> and strips harmful attributes.
+        // It also cleans out remaining inline styles and generic junk.
+        const cleanOutput = DOMPurify.sanitize(preCleaned, {
+            // Keep basic formatting tags
+            ALLOWED_TAGS: ['p', 'b', 'i', 'u', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'br'],
+            // Keep only essential attributes
+            ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height'] 
+        });
+
+        // 3. Final formatting adjustments (optional: unwrap <span> tags)
+        let finalOutput = cleanOutput;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = finalOutput;
+
+        // Iterate and replace remaining span tags with their contents (unwrap them)
+        let spans = tempDiv.querySelectorAll('span');
+        spans.forEach(span => {
+            while (span.firstChild) {
+                span.parentNode.insertBefore(span.firstChild, span);
+            }
+            span.remove();
+        });
+
+        // Clean up any double spaces that resulted from tag removal
+        finalOutput = tempDiv.innerHTML.replace(/\s\s+/g, ' ').trim();
+
+        return finalOutput;
+    }
+
+    // --- User Interface Functions ---
+
+    function cleanAndDisplay() {
+        const inputArea = document.getElementById('inputHtml');
+        const outputArea = document.getElementById('outputHtml');
+        
+        // Clean the content
+        const cleaned = cleanHtmlContent(inputArea.value);
+        
+        // Display the result
+        outputArea.value = cleaned;
+    }
+
+    function copyToClipboard() {
+        const outputArea = document.getElementById('outputHtml');
+        const copyButton = document.getElementById('copyButton');
+        
+        if (outputArea.value) {
+            outputArea.select();
+            document.execCommand('copy');
+            
+            copyButton.textContent = 'Copied!';
+            copyButton.className = 'button'; // Revert primary styling for feedback
+            setTimeout(() => {
+                copyButton.textContent = 'Copy to Clipboard';
+                copyButton.className = 'button button-primary'; // Back to original style
+            }, 1500);
+        }
+    }
+</script>
+
+</body>
+</html>
