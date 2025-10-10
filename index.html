@@ -97,6 +97,7 @@
 
 <script>
     let editor;
+    let editorWasClicked = false; // Flag to track the first click
 
     // --- Core Cleaning Logic (Remains the same) ---
     function cleanHtmlContent(dirtyHtml) {
@@ -141,13 +142,15 @@
         if (code) {
             editor.setData(code);
             updateConverter();
+            // Since content is explicitly loaded, mark the flag as true
+            editorWasClicked = true; 
             alert("Code loaded into the Visual Editor. You can now edit it visually.");
         } else {
             alert("Please paste the HTML code into the box first.");
         }
     }
 
-    // --- UI Update & Editor Initialization (Remains the same) ---
+    // --- UI Update & Editor Initialization ---
     function updateConverter() {
         if (!editor) return; 
         const dirtyContent = editor.getData();
@@ -168,6 +171,19 @@
         })
         .then( newEditor => {
             editor = newEditor;
+
+            // --- NEW FEATURE: Clear placeholder on first click/focus ---
+            editor.editing.view.document.on('focus', () => {
+                // If the user hasn't clicked/pasted before AND the default text is still there
+                if (!editorWasClicked) {
+                    // Check if the content is the default placeholder text
+                    if (editor.getData().includes('Paste rich text here for cleaning')) {
+                        editor.setData(''); // Clear the editor
+                    }
+                    editorWasClicked = true; // Mark as clicked so it doesn't clear subsequent content
+                }
+            });
+
             editor.model.document.on( 'change:data', () => {
                 setTimeout(updateConverter, 200); 
             });
