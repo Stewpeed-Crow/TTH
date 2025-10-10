@@ -3,113 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two-Way HTML Converter and Editor</title>
+    <title>Professional HTML Cleaner and Editor</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/ckeditor.js"></script>
 
     <style>
+        /* Custom styles to override CKEditor defaults and ensure good visual presentation */
         body {
-            padding-top: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 1400px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        h1 {
-            color: #9b4dca;
-        }
-        .editor-container {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            background-color: white;
-            padding: 10px;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: #f8fafc; /* Light gray background */
         }
         .ck-editor__editable_inline {
-            min-height: 250px; /* Set a minimum height for the visual editor */
-        }
-        textarea {
-            min-height: 20vh;
-            font-family: monospace;
-            font-size: 0.85em;
-            background-color: #f7f7f9;
-            /* Now writable for input/output */
-            resize: vertical; 
+            min-height: 250px; /* Standardize editor height */
+            background-color: white;
+            padding: 1rem;
         }
         #cleanHtmlOutput {
-            background-color: #333;
-            color: #aaffaa;
-            white-space: pre-wrap; /* Improvement for code readability */
+            min-height: 20vh;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.875rem; /* text-sm */
+            background-color: #1f2937; /* Dark gray background */
+            color: #d1fae5; /* Light green text */
+            resize: vertical;
+            padding: 0.75rem;
+            white-space: pre-wrap;
         }
         #livePreview {
             min-height: 40vh;
-            border: 1px dashed #9b4dca;
-            padding: 15px;
+            border: 2px dashed #6366f1; /* Indigo dashed border */
+            padding: 1.5rem;
             background-color: white;
             overflow: auto;
-        }
-        .column {
-            padding: 0 10px;
-        }
-        .button-group {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between; /* Align buttons differently */
-        }
-        .button-secondary {
-            background-color: #9b4dca;
-            border-color: #9b4dca;
-        }
-        .button-secondary:hover {
-            background-color: #7e3aab;
-            border-color: #7e3aab;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Two-Way HTML Converter and Editor</h1>
-        <p>Paste rich text for cleaning, or paste HTML code and click 'Load' to edit it visually.</p>
-    </div>
+<div class="max-w-7xl mx-auto p-4 md:p-8">
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-indigo-700">Word to Clean HTML Converter</h1>
+        <p class="text-lg text-gray-500 mt-2">Paste, Edit, Clean. Your essential two-way HTML tool.</p>
+    </header>
 
-    <div class="row">
-        <div class="column column-50">
-            <h5>1. Visual Editor (Edit Content Here)</h5>
-            <div id="visualEditor" class="editor-container">
-                <p>Paste rich text here for cleaning, or click 'Load' below to edit existing code.</p>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="space-y-6">
+            <div class="bg-white p-6 shadow-xl rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold mb-3 text-gray-700">1. Visual Editor (Edit Content Here)</h2>
+                <div id="visualEditor" class="border border-gray-300 rounded-lg overflow-hidden">
+                    <p>Paste rich text here for cleaning, or click 'Load' below to edit existing code.</p>
+                </div>
             </div>
 
-            <h5 style="margin-top: 30px;">2. Clean HTML Code (Input/Output)</h5>
-            <textarea id="cleanHtmlOutput" placeholder="Paste your HTML code here, or see the cleaned code here."></textarea>
-            
-            <div class="button-group">
-                <button onclick="loadCodeToEditor()" class="button button-secondary">Load Code to Editor</button>
-                <button onclick="copyToClipboard('cleanHtmlOutput', this)" class="button button-primary">Copy HTML Code</button>
+            <div class="bg-white p-6 shadow-xl rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold mb-3 text-gray-700">2. Clean HTML Code (Input/Output)</h2>
+                <textarea id="cleanHtmlOutput" class="w-full border border-gray-300 rounded-lg"></textarea>
+                
+                <div class="flex justify-between mt-4 space-x-4">
+                    <button onclick="loadCodeToEditor()" class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150">Load Code to Editor</button>
+                    <button onclick="copyToClipboard('cleanHtmlOutput', this)" class="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition duration-150">Copy HTML Code</button>
+                </div>
             </div>
         </div>
 
-        <div class="column column-50">
-            <h5>3. Live Web Preview</h5>
-            <div id="livePreview" class="editor-container">
-                The content will be displayed here.
+        <div>
+            <div class="bg-white p-6 shadow-xl rounded-lg h-full border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">3. Live Web Preview</h2>
+                <div id="livePreview" class="rounded-lg shadow-inner">
+                    The content will be displayed here.
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let editor; // Global variable to hold the CKEditor instance
+    let editor;
 
-    // --- Core Cleaning Logic (same as before) ---
+    // --- Core Cleaning Logic (Remains the same) ---
     function cleanHtmlContent(dirtyHtml) {
         if (!dirtyHtml) return '';
         let preCleaned = dirtyHtml
@@ -142,7 +115,7 @@
         return tempDiv.innerHTML.replace(/\s\s+/g, ' ').trim();
     }
 
-    // --- NEW: Function to load code from the output box to the editor ---
+    // --- Function to load code from the output box to the editor (Remains the same) ---
     function loadCodeToEditor() {
         if (!editor) {
             alert("Editor is not ready yet. Please wait a moment.");
@@ -150,34 +123,22 @@
         }
         const code = document.getElementById('cleanHtmlOutput').value;
         if (code) {
-            // Set the code into the visual editor
             editor.setData(code);
-            // Immediately sync to update the live preview
             updateConverter();
-            // Provide feedback
             alert("Code loaded into the Visual Editor. You can now edit it visually.");
         } else {
             alert("Please paste the HTML code into the box first.");
         }
     }
 
-    // --- UI Update & Editor Initialization ---
+    // --- UI Update & Editor Initialization (Remains the same) ---
     function updateConverter() {
         if (!editor) return; 
-
-        // 1. Get the content from the visual editor
         const dirtyContent = editor.getData();
-        
-        // 2. Clean the content (even if it's already clean HTML, we sanitize it again)
         const cleanedHtml = cleanHtmlContent(dirtyContent);
         
-        // 3. Update the Clean HTML Code output box
-        const outputArea = document.getElementById('cleanHtmlOutput');
-        outputArea.value = cleanedHtml;
-
-        // 4. Update the Live Preview panel
-        const previewPanel = document.getElementById('livePreview');
-        previewPanel.innerHTML = cleanedHtml;
+        document.getElementById('cleanHtmlOutput').value = cleanedHtml;
+        document.getElementById('livePreview').innerHTML = cleanedHtml;
     }
 
     // Initialize the Visual Editor
@@ -191,7 +152,6 @@
         })
         .then( newEditor => {
             editor = newEditor;
-            // Set up a listener for changes in the editor
             editor.model.document.on( 'change:data', () => {
                 setTimeout(updateConverter, 200); 
             });
@@ -203,7 +163,7 @@
         });
 
 
-    // --- User Interface Functions ---
+    // --- User Interface Functions (Remains the same) ---
     function copyToClipboard(elementId, buttonElement) {
         const outputArea = document.getElementById(elementId);
         
@@ -213,10 +173,13 @@
             
             const originalText = buttonElement.textContent;
             buttonElement.textContent = 'Copied!';
-            buttonElement.className = 'button'; 
+            buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
+            buttonElement.classList.add('bg-gray-500');
+            
             setTimeout(() => {
                 buttonElement.textContent = originalText;
-                buttonElement.className = 'button button-primary';
+                buttonElement.classList.remove('bg-gray-500');
+                buttonElement.classList.add('bg-green-600', 'hover:bg-green-700');
             }, 1500);
         }
     }
