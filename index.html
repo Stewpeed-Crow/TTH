@@ -11,66 +11,82 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/ckeditor.js"></script>
 
     <style>
-        /* Custom styles to override CKEditor defaults and ensure good visual presentation */
+        /* Custom styles for better typography and visual consistency */
         body {
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            background-color: #f8fafc; /* Light gray background */
+            background-color: #f1f5f9; /* Lighter slate background */
+            line-height: 1.6; /* Better reading experience */
+        }
+        h1, h2 {
+            font-weight: 700;
         }
         .ck-editor__editable_inline {
-            min-height: 250px; /* Standardize editor height */
+            min-height: 250px;
             background-color: white;
             padding: 1rem;
         }
+        /* Styling the raw code output box */
         #cleanHtmlOutput {
             min-height: 20vh;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 0.875rem; /* text-sm */
-            background-color: #1f2937; /* Dark gray background */
-            color: #d1fae5; /* Light green text */
+            font-size: 0.875rem;
+            background-color: #111827; /* Darker background */
+            color: #4ade80; /* Brighter green text */
             resize: vertical;
-            padding: 0.75rem;
+            padding: 1rem;
             white-space: pre-wrap;
+            border: 1px solid #374151; /* Subtle border for definition */
         }
+        /* Styling the live preview box */
         #livePreview {
             min-height: 40vh;
-            border: 2px dashed #6366f1; /* Indigo dashed border */
+            border: 3px solid #6366f1; /* Thicker, defined border */
             padding: 1.5rem;
             background-color: white;
             overflow: auto;
+            /* Make the preview look like a piece of paper */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 
-<div class="max-w-7xl mx-auto p-4 md:p-8">
-    <header class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold text-indigo-700">Word to Clean HTML Converter</h1>
-        <p class="text-lg text-gray-500 mt-2">Paste, Edit, Clean. Your essential two-way HTML tool.</p>
+<div class="max-w-7xl mx-auto p-4 md:p-10">
+    <header class="text-center mb-10 bg-white p-6 rounded-xl shadow-lg">
+        <h1 class="text-5xl font-extrabold text-indigo-700 tracking-tight">Word to Clean HTML Converter</h1>
+        <p class="text-xl text-gray-600 mt-3">The essential two-way tool for cleaning rich text and editing code.</p>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="space-y-6">
-            <div class="bg-white p-6 shadow-xl rounded-lg border border-gray-200">
-                <h2 class="text-xl font-semibold mb-3 text-gray-700">1. Visual Editor (Edit Content Here)</h2>
+        <div class="space-y-8">
+            
+            <div class="bg-white p-6 shadow-2xl rounded-xl border border-gray-200">
+                <h2 class="text-2xl font-bold mb-4 text-indigo-800 border-b pb-2">1. Visual Editor (Paste & Edit)</h2>
                 <div id="visualEditor" class="border border-gray-300 rounded-lg overflow-hidden">
                     <p>Paste rich text here for cleaning, or click 'Load' below to edit existing code.</p>
                 </div>
             </div>
 
-            <div class="bg-white p-6 shadow-xl rounded-lg border border-gray-200">
-                <h2 class="text-xl font-semibold mb-3 text-gray-700">2. Clean HTML Code (Input/Output)</h2>
-                <textarea id="cleanHtmlOutput" class="w-full border border-gray-300 rounded-lg"></textarea>
+            <div class="bg-white p-6 shadow-2xl rounded-xl border border-gray-200">
+                <h2 class="text-2xl font-bold mb-4 text-indigo-800 border-b pb-2">2. Clean HTML Code (Input/Output)</h2>
+                <textarea id="cleanHtmlOutput" class="w-full rounded-lg"></textarea>
                 
                 <div class="flex justify-between mt-4 space-x-4">
-                    <button onclick="loadCodeToEditor()" class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150">Load Code to Editor</button>
-                    <button onclick="copyToClipboard('cleanHtmlOutput', this)" class="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition duration-150">Copy HTML Code</button>
+                    <button onclick="loadCodeToEditor()" 
+                            class="px-8 py-3 bg-indigo-600 text-white font-semibold text-lg rounded-full shadow-md hover:bg-indigo-700 transition duration-200 ease-in-out transform hover:scale-105">
+                        Load Code to Editor
+                    </button>
+                    <button onclick="copyToClipboard('cleanHtmlOutput', this)" 
+                            class="px-8 py-3 bg-green-600 text-white font-semibold text-lg rounded-full shadow-md hover:bg-green-700 transition duration-200 ease-in-out transform hover:scale-105">
+                        Copy HTML Code
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div>
-            <div class="bg-white p-6 shadow-xl rounded-lg h-full border border-gray-200">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">3. Live Web Preview</h2>
+        <div class="flex flex-col">
+            <div class="bg-white p-6 shadow-2xl rounded-xl border border-gray-200 h-full">
+                <h2 class="text-2xl font-bold mb-4 text-indigo-800 border-b pb-2">3. Live Web Preview</h2>
                 <div id="livePreview" class="rounded-lg shadow-inner">
                     The content will be displayed here.
                 </div>
@@ -163,7 +179,7 @@
         });
 
 
-    // --- User Interface Functions (Remains the same) ---
+    // --- User Interface Functions (Remains the same, updated for Tailwind classes) ---
     function copyToClipboard(elementId, buttonElement) {
         const outputArea = document.getElementById(elementId);
         
@@ -172,13 +188,16 @@
             document.execCommand('copy');
             
             const originalText = buttonElement.textContent;
+            
+            // Apply feedback styling
             buttonElement.textContent = 'Copied!';
             buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
-            buttonElement.classList.add('bg-gray-500');
+            buttonElement.classList.add('bg-gray-500', 'hover:bg-gray-600');
             
             setTimeout(() => {
+                // Revert styling
                 buttonElement.textContent = originalText;
-                buttonElement.classList.remove('bg-gray-500');
+                buttonElement.classList.remove('bg-gray-500', 'hover:bg-gray-600');
                 buttonElement.classList.add('bg-green-600', 'hover:bg-green-700');
             }, 1500);
         }
